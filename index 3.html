@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Study Rep</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;--bg:#f2f6f3;--card:#fff;--fg:#17302b;--mut:#6b7f79;--ac:#0f766e;--ok:#1b7f3b;--okb:#dff3e4;--no:#b3261e;--nob:#fbe4e2;--bd:#cfdcd6}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0f1917;--card:#172522;--fg:#e4efeb;--mut:#93a8a1;--ac:#4fd1c0;--ok:#6fdc8c;--okb:#1b3a26;--no:#ff8a80;--nob:#432220;--bd:#2c423c}}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,sans-serif}
+main{max-width:600px;margin:0 auto;padding:16px 16px 48px}
+h1{font:700 26px/1.2 Georgia,"Iowan Old Style",serif;margin:8px 0}
+.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px}
+button,label.sm{font:inherit;color:inherit;cursor:pointer}
+.big{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.big b{font-family:Georgia,serif;font-size:18px}.big span{display:block;color:var(--mut);font-size:14px}
+.nx{background:var(--ac);color:var(--bg);border:0;border-radius:10px;padding:10px 18px;font-weight:600;margin:6px 6px 6px 0}
+.sm{display:inline-block;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;font-size:14px;margin:2px 4px 2px 0}
+.bk{background:none;border:0;color:var(--ac);font-weight:600;padding:6px 0}
+.q{font:600 19px/1.35 Georgia,serif;margin:0 0 12px;white-space:pre-wrap}
+.o{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.o.ok{background:var(--okb);border-color:var(--ok)}.o.no{background:var(--nob);border-color:var(--no)}
+.L{font-weight:700;color:var(--ac);min-width:1.2em}
+.ex{margin-top:10px;padding:10px 12px;border-left:4px solid var(--ac);background:var(--bg);border-radius:6px;white-space:pre-wrap}
+.bar{height:6px;background:var(--bd);border-radius:3px;margin:8px 0 14px}.bar i{display:block;height:100%;background:var(--ac);border-radius:3px}
+.pic{max-width:100%;max-height:320px;border-radius:8px;display:block;margin:0 auto 12px}
+.th{width:56px;height:56px;object-fit:cover;border-radius:6px;float:left;margin-right:10px}
+.tag{font-size:12px;color:var(--ac);font-weight:700}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.in{width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--bg);border:1.5px solid var(--bd);border-radius:8px;padding:8px 10px;margin:4px 0 10px}
+.seg button{border:1.5px solid var(--bd);background:var(--bg);padding:8px 14px;border-radius:8px;margin-right:6px}.seg .on{border-color:var(--ac);color:var(--ac);font-weight:700}
+.opt{display:flex;gap:8px;align-items:center}.opt .in{margin:4px 0}
+</style></head><body><main id="app"></main>
+<script>
+const $=e=>document.getElementById(e),uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sh=a=>{for(let j=a.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[a[j],a[k]]=[a[k],a[j]]}return a};
+let db={fields:[]},nav={},S=null,ed=null;
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open("studyrep",1);r.onupgradeneeded=()=>r.result.createObjectStore("k");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function load(){try{const d=await idb();return await new Promise(r=>{const q=d.transaction("k").objectStore("k").get("db");q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}catch(e){try{return JSON.parse(localStorage.getItem("studyrep"))}catch(x){return null}}}
+async function save(){try{const d=await idb();d.transaction("k","readwrite").objectStore("k").put(db,"db")}catch(e){try{localStorage.setItem("studyrep",JSON.stringify(db))}catch(x){}}}
+const F=()=>db.fields.find(x=>x.id==nav.f),C=()=>F().cols.find(x=>x.id==nav.c),D=()=>C().decks.find(x=>x.id==nav.d);
+const cur=()=>nav.d?D():nav.c?C():F();
+const decksOf=f=>f.cols.flatMap(c=>c.decks),count=f=>decksOf(f).reduce((n,d)=>n+d.cards.length,0);
+const hd=(t,s)=>`<div>${nav.f||ed||S?`<button class="bk" onclick="back()">‹ Back</button>`:""}</div><h1>${esc(t)}</h1><p class="sub">${esc(s||"")}</p>`;
+function r(){if(S)return study();if(ed)return editor();if(nav.d)return deck();if(nav.c)return col();if(nav.f)return fld();home()}
+function go(k,id){nav[k]=id;r()}
+function back(){if(S)S=null;else if(ed)ed=null;else if(nav.d)nav.d=null;else if(nav.c)nav.c=null;else nav.f=null;r()}
+function add(k){const n=(prompt("Name")||"").trim();if(!n)return;
+if(k=="f")db.fields.push({id:uid(),name:n,cols:[]});
+if(k=="c")F().cols.push({id:uid(),name:n,decks:[]});
+if(k=="d")C().decks.push({id:uid(),name:n,cards:[]});save();r()}
+function ren(){const o=cur(),n=(prompt("New name",o.name)||"").trim();if(n){o.name=n;save();r()}}
+function del(){const o=cur();if(!confirm("Delete \""+o.name+"\" and everything inside it?"))return;
+const a=nav.d?C().decks:nav.c?F().cols:db.fields;a.splice(a.indexOf(o),1);save();back()}
+const tools=`<div style="margin-top:18px"><button class="sm" onclick="ren()">Rename</button><button class="sm" onclick="del()">Delete</button></div>`;
+function home(){$("app").innerHTML=hd("Study Rep","Pick a field of study")+
+db.fields.map(f=>`<button class="big" onclick="go('f','${f.id}')"><b>${esc(f.name)}</b><span>${f.cols.length} collections, ${count(f)} cards</span></button>`).join("")+
+(db.fields.length?"":`<p class="sub">No fields yet. Add one, like Biochemistry or Math.</p>`)+
+`<button class="nx" onclick="add('f')">+ Add field</button>
+<div class="card" style="margin-top:18px"><b>Backup</b><p class="sub" style="margin:4px 0 8px">Your data is stored in this browser. Export a copy now and then.</p><button class="sm" onclick="exp()">Export</button><label class="sm">Import<input type="file" accept="application/json" hidden onchange="imp(this)"></label></div>`}
+function fld(){const f=F();$("app").innerHTML=hd(f.name,"Field of study")+
+f.cols.map(c=>`<button class="big" onclick="go('c','${c.id}')"><b>${esc(c.name)}</b><span>${c.decks.length} decks, ${c.decks.reduce((n,d)=>n+d.cards.length,0)} cards</span></button>`).join("")+
+(f.cols.length?"":`<p class="sub">No collections yet. A collection groups decks, like a lecture or chapter.</p>`)+
+`<button class="nx" onclick="add('c')">+ Add collection</button>`+tools}
+function col(){const c=C();$("app").innerHTML=hd(c.name,F().name+" / collection")+
+c.decks.map(d=>`<button class="big" onclick="go('d','${d.id}')"><b>${esc(d.name)}</b><span>${d.cards.length} cards</span></button>`).join("")+
+(c.decks.length?"":`<p class="sub">No decks yet.</p>`)+
+`<button class="nx" onclick="add('d')">+ Add deck</button><button class="nx" onclick="studyList(C().decks.flatMap(d=>d.cards))">All rounds: random</button><button class="nx" onclick="studyList(C().decks.flatMap(d=>d.cards),1)">All rounds: in order</button>`+tools}
+function deck(){const d=D();$("app").innerHTML=hd(d.name,F().name+" / "+C().name)+
+`<button class="nx" onclick="studyList(D().cards)">Study: random order</button><button class="nx" onclick="studyList(D().cards,1)">Study: in order</button><button class="nx" onclick="newCard()">+ Add card</button>`+
+d.cards.map((c,n)=>`<div class="card row"><div>${c.img?`<img class="th" src="${c.img}" alt="">`:""}<span class="tag">${c.type=="mc"?"Choice":"Flashcard"}</span><div>${esc(c.q)||"(picture)"}</div></div><div style="white-space:nowrap"><button class="sm" onclick="edit(${n})">Edit</button><button class="sm" onclick="rm(${n})">Delete</button></div></div>`).join("")+
+(d.cards.length?"":`<p class="sub">No cards yet.</p>`)+tools}
+function rm(n){if(confirm("Delete this card?")){D().cards.splice(n,1);save();r()}}
+const blank=()=>({type:"mc",q:"",img:"",opts:["","","",""],a:0,ex:"",back:"",backImg:""});
+function newCard(){ed=blank();r()}
+function edit(n){ed=Object.assign(blank(),JSON.parse(JSON.stringify(D().cards[n])));ed.n=n;r()}
+function pic(el,k){const f=el.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,900/Math.max(im.width,im.height)),cv=document.createElement("canvas");cv.width=im.width*s;cv.height=im.height*s;const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);ed[k]=cv.toDataURL("image/jpeg",.82);r()};im.src=rd.result};rd.readAsDataURL(f)}
+const imgBox=k=>`${ed[k]?`<img class="pic" src="${ed[k]}" alt=""><button class="sm" onclick="ed['${k}']='';r()">Remove picture</button>`:""}<label class="sm">${ed[k]?"Change":"Add"} picture<input type="file" accept="image/*" hidden onchange="pic(this,'${k}')"></label>`;
+function editor(){const e=ed;$("app").innerHTML=hd(e.n!=null?"Edit card":"New card",D().name)+
+`<div class="seg"><button class="${e.type=="mc"?"on":""}" onclick="ed.type='mc';r()">Choices</button><button class="${e.type=="fc"?"on":""}" onclick="ed.type='fc';r()">Flashcard</button></div>
+<p style="margin:14px 0 0"><b>Question</b></p><textarea class="in" rows="3" oninput="ed.q=this.value">${esc(e.q)}</textarea>${imgBox("img")}`+
+(e.type=="mc"?`<p style="margin:14px 0 0"><b>Choices</b> <span class="sub">(select the correct one)</span></p>`+
+e.opts.map((o,j)=>`<div class="opt"><input type="radio" name="ans" ${e.a==j?"checked":""} onchange="ed.a=${j}"><input class="in" value="${esc(o)}" placeholder="Choice ${"ABCDEF"[j]}" oninput="ed.opts[${j}]=this.value"></div>`).join("")+
+(e.opts.length<6?`<button class="sm" onclick="ed.opts.push('');r()">+ Add choice</button>`:"")+(e.opts.length>2?`<button class="sm" onclick="ed.opts.pop();if(ed.a>=ed.opts.length)ed.a=0;r()">Remove last</button>`:"")+
+`<p style="margin:14px 0 0"><b>Explanation</b> <span class="sub">(optional)</span></p><textarea class="in" rows="3" oninput="ed.ex=this.value">${esc(e.ex)}</textarea>`
+:`<p style="margin:14px 0 0"><b>Answer</b></p><textarea class="in" rows="3" oninput="ed.back=this.value">${esc(e.back)}</textarea>${imgBox("backImg")}`)+
+`<div style="margin-top:14px"><button class="nx" onclick="saveCard()">Save card</button><button class="sm" onclick="back()">Cancel</button></div>`}
+function saveCard(){const e=ed;if(!e.q.trim()&&!e.img)return alert("Add a question or a picture.");
+const c={id:e.id||uid(),type:e.type,q:e.q.trim(),img:e.img};
+if(e.type=="mc"){const k=e.opts.map((t,j)=>[t.trim(),j]).filter(x=>x[0]),a=k.findIndex(x=>x[1]==e.a);if(k.length<2||a<0)return alert("Add at least 2 choices and select a filled-in correct one.");c.opts=k.map(x=>x[0]);c.a=a;c.ex=e.ex.trim()}
+else{if(!e.back.trim()&&!e.backImg)return alert("Add an answer.");c.back=e.back.trim();c.backImg=e.backImg}
+const cs=D().cards;if(e.n!=null)cs[e.n]=c;else cs.push(c);ed=null;save();r()}
+function studyList(l,o){if(!l.length)return alert("No cards to study yet.");S={pool:o?l.slice():sh(l.slice()),i:0,score:0,miss:[]};nextCard()}
+function nextCard(){S.done=0;S.flip=0;const c=S.pool[S.i];if(c&&c.type=="mc")S.ord=sh(c.opts.map((_,j)=>j));r()}
+function study(){if(S.i>=S.pool.length)return fin();const c=S.pool[S.i];
+let h=`<button class="bk" onclick="back()">‹ End session</button><p class="sub" style="margin:0">${S.i+1} / ${S.pool.length}</p><div class="bar"><i style="width:${S.i/S.pool.length*100}%"></i></div><div class="card"><p class="q">${esc(c.q)}</p>${c.img?`<img class="pic" src="${c.img}" alt="">`:""}`;
+if(c.type=="mc")h+=S.ord.map((j,n)=>`<button class="o" id="o${n}" onclick="pick(${n})"><span class="L">${"ABCDEF"[n]}</span>${esc(c.opts[j])}</button>`).join("")+`<div id="fb"></div>`;
+else if(!S.flip)h+=`<button class="nx" onclick="S.flip=1;r()">Show answer</button>`;
+else h+=`<div class="ex">${esc(c.back)}</div>${c.backImg?`<img class="pic" style="margin-top:10px" src="${c.backImg}" alt="">`:""}<div style="margin-top:12px"><button class="nx" onclick="mark(1)">Got it</button><button class="sm" onclick="mark(0)">Again</button></div>`;
+$("app").innerHTML=h+`</div>`}
+function pick(n){if(S.done)return;S.done=1;const c=S.pool[S.i],ok=S.ord[n]==c.a;if(ok)S.score++;else S.miss.push(c);
+$("o"+n).classList.add(ok?"ok":"no");$("o"+S.ord.indexOf(c.a)).classList.add("ok");
+$("fb").innerHTML=`<div class="ex"><b>${ok?"Correct.":"Not quite."}</b> ${esc(c.ex)}</div><button class="nx" onclick="S.i++;nextCard()">${S.i+1<S.pool.length?"Next":"See results"}</button>`}
+function mark(ok){if(ok)S.score++;else S.miss.push(S.pool[S.i]);S.i++;nextCard()}
+function fin(){const p=Math.round(S.score/S.pool.length*100);$("app").innerHTML=`<h1>${S.score} / ${S.pool.length} (${p}%)</h1><p class="sub">${S.miss.length?"Retry the ones you missed.":"Clean run."}</p>`+(S.miss.length?`<button class="nx" onclick="studyList(S.miss)">Retry missed (${S.miss.length})</button>`:"")+`<button class="nx" onclick="S=null;r()">Done</button>`}
+function exp(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:"application/json"}));a.download="study-rep-backup.json";a.click()}
+function imp(el){const f=el.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!Array.isArray(d.fields))throw 0;if(confirm("OK replaces everything. Cancel adds the file's fields to what you have."))db=d;else db.fields.push(...d.fields);save();r()}catch(e){alert("That file is not a valid backup.")}})}
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+load().then(d=>{if(d&&Array.isArray(d.fields))db=d;r()});
+</script></body></html>
