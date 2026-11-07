@@ -65,9 +65,9 @@ f.cols.map(c=>`<button class="big" onclick="go('c','${c.id}')"><b>${esc(c.name)}
 function col(){const c=C();$("app").innerHTML=hd(c.name,F().name+" / collection")+
 c.decks.map(d=>`<button class="big" onclick="go('d','${d.id}')"><b>${esc(d.name)}</b><span>${d.cards.length} cards</span></button>`).join("")+
 (c.decks.length?"":`<p class="sub">No decks yet.</p>`)+
-`<button class="nx" onclick="add('d')">+ Add deck</button><button class="nx" onclick="studyList(C().decks.flatMap(d=>d.cards))">Study whole collection</button>`+tools}
+`<button class="nx" onclick="add('d')">+ Add deck</button><button class="nx" onclick="studyList(C().decks.flatMap(d=>d.cards))">All rounds: random</button><button class="nx" onclick="studyList(C().decks.flatMap(d=>d.cards),1)">All rounds: in order</button>`+tools}
 function deck(){const d=D();$("app").innerHTML=hd(d.name,F().name+" / "+C().name)+
-`<button class="nx" onclick="studyList(D().cards)">Study deck</button><button class="nx" onclick="newCard()">+ Add card</button>`+
+`<button class="nx" onclick="studyList(D().cards)">Study: random order</button><button class="nx" onclick="studyList(D().cards,1)">Study: in order</button><button class="nx" onclick="newCard()">+ Add card</button>`+
 d.cards.map((c,n)=>`<div class="card row"><div>${c.img?`<img class="th" src="${c.img}" alt="">`:""}<span class="tag">${c.type=="mc"?"Choice":"Flashcard"}</span><div>${esc(c.q)||"(picture)"}</div></div><div style="white-space:nowrap"><button class="sm" onclick="edit(${n})">Edit</button><button class="sm" onclick="rm(${n})">Delete</button></div></div>`).join("")+
 (d.cards.length?"":`<p class="sub">No cards yet.</p>`)+tools}
 function rm(n){if(confirm("Delete this card?")){D().cards.splice(n,1);save();r()}}
@@ -90,7 +90,7 @@ const c={id:e.id||uid(),type:e.type,q:e.q.trim(),img:e.img};
 if(e.type=="mc"){const k=e.opts.map((t,j)=>[t.trim(),j]).filter(x=>x[0]),a=k.findIndex(x=>x[1]==e.a);if(k.length<2||a<0)return alert("Add at least 2 choices and select a filled-in correct one.");c.opts=k.map(x=>x[0]);c.a=a;c.ex=e.ex.trim()}
 else{if(!e.back.trim()&&!e.backImg)return alert("Add an answer.");c.back=e.back.trim();c.backImg=e.backImg}
 const cs=D().cards;if(e.n!=null)cs[e.n]=c;else cs.push(c);ed=null;save();r()}
-function studyList(l){if(!l.length)return alert("No cards to study yet.");S={pool:sh(l.slice()),i:0,score:0,miss:[]};nextCard()}
+function studyList(l,o){if(!l.length)return alert("No cards to study yet.");S={pool:o?l.slice():sh(l.slice()),i:0,score:0,miss:[]};nextCard()}
 function nextCard(){S.done=0;S.flip=0;const c=S.pool[S.i];if(c&&c.type=="mc")S.ord=sh(c.opts.map((_,j)=>j));r()}
 function study(){if(S.i>=S.pool.length)return fin();const c=S.pool[S.i];
 let h=`<button class="bk" onclick="back()">‹ End session</button><p class="sub" style="margin:0">${S.i+1} / ${S.pool.length}</p><div class="bar"><i style="width:${S.i/S.pool.length*100}%"></i></div><div class="card"><p class="q">${esc(c.q)}</p>${c.img?`<img class="pic" src="${c.img}" alt="">`:""}`;
